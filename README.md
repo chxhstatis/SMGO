@@ -1,4 +1,4 @@
-# PDL-WDL
+# S
 configuration.py: Set your own training parameters, models and data source folders.  
 prepare_label.py: Preprocess the number of patches and organize them into the project folder.  
 test_single_image.py: Test the category of the single patch.  
