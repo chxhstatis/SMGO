@@ -67,7 +67,7 @@ table(diff4$Surgery)
 table(diff4$`Stage 7th`,diff4$`Stage 6th`)
 table(diff4$`Stage 7th`)
 colnames(diff4)
-colnames(diff4)[7]<- 'Stage' ###ÒÔStage 7th×÷Îª×îÖÕµÄstage¼ÆËã
+colnames(diff4)[7]<- 'Stage' ###ä»¥Stage 7thä½œä¸ºæœ€ç»ˆçš„stageè®¡ç®—
 colnames(diff4)
 diff4<-diff4[,-c(8,9)]
 diff4$Stage<- as.character(diff4$Stage)
@@ -507,14 +507,14 @@ write.csv(results, ' Grade gene-tcga.csv', quote=F, row.names=T)
 #Fig. 2a
 library(maftools)
 laml.maf = read.csv("TCGA.LIHC.mutect.maf.csv",header=TRUE)
-oncoplot(maf = laml.maf , top = 30, fontSize = 12 ,showTumorSampleBarcodes = F£¬clinicalFeatures = 'grade' )
+oncoplot(maf = laml.maf , top = 30, fontSize = 12 ,showTumorSampleBarcodes = Fï¼ŒclinicalFeatures = 'grade' )
 laml.titv = titv(maf = laml, plot = FALSE, useSyn = TRUE)
 plotTiTv(res = laml.titv)
 
 #Fig. 2b 
 library(maftools)
 laml.maf = read.csv("TCGA.LIHC.mutect.maf.csv",header=TRUE)
-oncoplot(maf = laml.maf , top = 30, fontSize = 12 ,showTumorSampleBarcodes = F£¬clinicalFeatures = 'grade' )
+oncoplot(maf = laml.maf , top = 30, fontSize = 12 ,showTumorSampleBarcodes = Fï¼ŒclinicalFeatures = 'grade' )
 laml.titv = titv(maf = laml, plot = FALSE, useSyn = TRUE)
 plotTiTv(res = laml.titv)
 
@@ -642,7 +642,7 @@ library(corrplot)
 library(psych)
 library(xtable)
 
-dat12$geneID<-gsub('/', ', ', dat12$geneID)# Category,ID,term,Genes,adj_pval£»
+dat12$geneID<-gsub('/', ', ', dat12$geneID)# Category,ID,term,Genes,adj_pvalï¼›
 colnames(dat12)
 dat12<-dat12[,c(1:3,9,7)]
 colnames(dat12)<- c('Category','ID','term','Genes','adj_pval')
@@ -787,6 +787,8 @@ pheatmap(Clin3, cluster_rows = FALSE, cluster_cols = FALSE, color = colorRampPal
          border=FALSE,fontsize_row=18,fontsize_col=18, gaps_row= c(5),cellwidth=40,cellheight=60)
 
 #Fig. 3a
+library('DESeq2')
+eset.rma <- justRMA(filenames=paste(rownames(pheno),'.CEL',sep=''), celfile.path='./')
 library(ggfortify)
 library(sva)
 library(mgcv)
@@ -797,19 +799,78 @@ library(limma)
 library(FactoMineR)# 
 library(factoextra) 
 library(bladderbatch)
-#DEGs in GEO database
-setwd("D:/SEER-OSCC-R-1013/GEO-cell line data")
-#import expression data
-datExpr1 = read.table("./GSE98942-um1,um2/Expdata.txt",header=T,sep="\t")
-datExpr3 = read.table("./GSE146483-HSC2£¬3,4/Expdata.txt",header=T,sep="\t")
+rm(list = ls())
+library(GEOquery)
 
+#HSC24 cell lines
+library("marray")
+target=read.table("target.txt",sep="\t", header=T)
+RG <- read.maimages(target, source="agilent", path="./GSE146483-HSC234/",green.only=TRUE)
+write.table(RG,'Expdata-RAW.txt',sep= '\t')
+
+#UM12 cell lines
+library(affy)
+
+aff.data <- ReadAffy("GSM2628173.CEL")
+exprsSet.MAS5<-mas5(aff.data)
+write.exprs(exprsSet.MAS5, file="GSM2628173.txt")
+
+
+aff.data <- ReadAffy("GSM2628174.CEL")
+exprsSet.MAS5<-mas5(aff.data)
+write.exprs(exprsSet.MAS5, file="GSM2628174.txt")
+
+
+aff.data <- ReadAffy("GSM2628175.CEL")
+exprsSet.MAS5<-mas5(aff.data)
+write.exprs(exprsSet.MAS5, file="GSM2628175.txt")
+
+
+aff.data <- ReadAffy("GSM2628176.CEL")
+exprsSet.MAS5<-mas5(aff.data)
+write.exprs(exprsSet.MAS5, file="GSM2628176.txt")
+
+
+dat1<- read.table("GSM2628173.txt",sep = '\t',header =T)
+dat2<- read.table("GSM2628174.txt",sep = '\t',header =T)
+dat3<- read.table("GSM2628175.txt",sep = '\t',header =T)
+dat4<- read.table("GSM2628176.txt",sep = '\t',header =T)
+
+exp<- merge(dat1,dat2, by= 'X' )
+exp<- merge(exp,dat3, by= 'X' )
+exp<- merge(exp,dat4, by= 'X' )
+write.csv( exp, 'Expdata-raw.csv',sep=',')
+
+library(genefilter)
+library(BiocParallel)
+library(limma)
+library(FactoMineR)# 
+library(factoextra) 
+library(bladderbatch)
+
+setwd("D:/SEER-OSCC-R-1013/AAAA final manuscript and data/original data-20211020/original data")
+#import expression data
+datExpr1 = read.table("./GSE98942-um1,um2/Expdata-raw.csv",header=T,sep=",")
+#datExpr1 = read.table("./GSE98942-um1,um2/Expdata.txt",header=T,sep="\t")
+datExpr1<-datExpr1[!duplicated(datExpr1$X),]
+rownames(datExpr1) <- datExpr1$X
+datExpr1$X<- NULL
+
+datExpr3 = read.table("./GSE146483-HSC234/Expdata-RAW.txt",header=T,sep="\t")
+datExpr3 <- datExpr3[,-2]
+datExpr3<-datExpr3[!duplicated(datExpr3$ProbeName),]
+
+rownames(datExpr3) <- datExpr3$ProbeName
+datExpr3$ProbeName<- NULL
+datExpr3 <- datExpr3 [,-c(2,5)] 
 #import phenotype data
 pheno1 = read.table('./GSE98942-um1,um2/target.txt',header=T,sep="\t")
-pheno3 = read.table('./GSE146483-HSC2£¬3,4/target.txt',header=T,sep="\t")
+pheno3 = read.table('./GSE146483-HSC234/target.txt',header=T,sep="\t")
+pheno3<- pheno3[-c(2,5),] 
 pheno = rbind(pheno1, pheno3)
 View(pheno)
 anno1 = read.csv("./GSE98942-um1,um2/annotation.csv",head=T)
-anno3 = read.csv("./GSE146483-HSC2£¬3,4/annotation.csv",head=T)
+anno3 = read.csv("./GSE146483-HSC234/annotation.csv",head=T)
 
 datExpr1$gene = anno1$GENE_SYMBOL[match(rownames(datExpr1), anno1$ID)]
 datExpr3$gene = anno3$GENE_SYMBOL[match(rownames(datExpr3), anno3$ID)]
@@ -822,21 +883,21 @@ datExpr1 = datExpr1[!grepl('///', datExpr1$gene),]
 
 datExpr1 = datExpr1[!duplicated(datExpr1$gene),]
 datExpr3 = datExpr3[!duplicated(datExpr3$gene),]
-
+datExpr3<-na.omit(datExpr3)
 rownames(datExpr1) = datExpr1$gene
 rownames(datExpr3) = datExpr3$gene
 
 dat = merge(datExpr1, datExpr3, all.x = T)
 
-dat = dat[!duplicated(dat$gene),]
 rownames(dat) = dat$gene
 dat$gene = NULL
 #dat[is.na(dat)]=0
-dat=dat+1
-hist(dat[,4])
-dat = log2(dat)
-hist(dat[,4])
+#dat=dat+1
+#hist(dat[,4])
+#dat = log2(dat)
+#hist(dat[,4])
 dat1<-na.omit(dat)
+#dat1[dat1<0] <- 0
 ##PCA
 dat2=as.data.frame(t(dat1))
 palform<- as.character(pheno$platform)
@@ -849,18 +910,10 @@ fviz_pca_ind(dat.pca,
              legend.title = "Groups"
 )
 
-par(mfrow=c(2,1))
-boxplot(dat1,las = 2)
-
-# imma-removeBatchEffect
+# remove batch effect
 ex_b_limma <- removeBatchEffect(dat1,
                                 batch = pheno$platform)
-boxplot(ex_b_limma,las = 2)
-dist_mat1 <- dist(t(ex_b_limma))
-clustering <- hclust(dist_mat1, method = "complete")
-plot(clustering,labels = colnames(ex_b_limma))
 
-###PCA
 pca1 =as.data.frame(t(ex_b_limma))
 dat.pca <- PCA(pca1, graph = FALSE)
 fviz_pca_ind(dat.pca,
@@ -871,181 +924,43 @@ fviz_pca_ind(dat.pca,
              legend.title = "Groups"
 )
 
+write.table(ex_b_limma, 'Expdata-merge GEO two genset,4 lines-count,remove batch, no log.txt',sep='\t')
 
-dat3<-as.data.frame(t(ex_b_limma))
-
-save(ex_b_limma,x_merge,x_merge1,batch1,file = "ex_b_limma.Rdata")
-
-ex_b_limma<- ex_b_limma[,c(6,9,1:5,7,8,10)]
-library(car)
-Pvalue<-c(rep(0,nrow(ex_b_limma)))
-
-log2_FC<-c(rep(0,nrow(ex_b_limma)))
-
-ex_b_limma<-as.data.frame(ex_b_limma)
-
-for(i in 1:nrow(ex_b_limma)){
-  
-  if(sd(ex_b_limma[i, 1:6])==0&&ex_b_limma[i,7:10]==0){
-    
-    Pvalue <- "NA"
-    
-    log2_FC<- "NA"
-    
-  }else{
-    
-    y=t.test(as.numeric(ex_b_limma[i,1:6]),as.numeric(ex_b_limma[i,7:10]))
-    0
-    Pvalue[i]<-y$p.value
-    
-    log2_FC[i]<-log2((mean(as.numeric(ex_b_limma[i,1:6]))+0.001)/(mean(as.numeric(ex_b_limma[i,7:10]))+0.001))
-    
-  }
-  
-}
-
-fdr=p.adjust(Pvalue, "BH")
-
-out<-cbind(ex_b_limma,log2_FC,Pvalue,fdr)
-
-out1<-out[,11:13]
-out1$gene<- rownames(out1)
-
-write.table(out1,file="ttest.out-(HSC234,UM12, log2(dat+1))-20210822.txt",quote=FALSE,sep="\t")
-
-#GO 
-library(R.utils)
-library(BiocManager)
-library(clusterProfiler)
-library(topGO)
-library(Rgraphviz)
-library(pathview)
-library(org.Hs.eg.db)
-library(limma)
+install.packages()
+library(ggridges)
 library(ggplot2)
-setwd("GEO/LOG2")
-dat2<- read.table("ttest.out-(HSC234,UM12, log2(dat+1))-20210822.txt",sep='\t',header=T)
-dat3<- subset(dat2 , dat2$log2_FC > 0 & dat2$Pvalue < 0.05)  #
-dat4<- subset(dat2 , dat2$log2_FC < 0 & dat2$Pvalue < 0.05) #
+setwd("D:/SEER-OSCC-R-1013/GSEA-GEO")
+dt <- read.csv("GSEA-GEO-raw.csv",header = T)
+dt$Pathway<- as.factor(dt$Pathway)
+dt$Pathway <- factor(dt$Pathway,levels=c( "KEGG_CELL_CYCLE" ,
+                                         "REACTOME_G2_M_DNA_DAMAGE_CHECKPOINT" ,
+                                         "GEORGES_CELL_CYCLE_MIR192_TARGETS" ,
+                                         "KEGG_HOMOLOGOUS_RECOMBINATION",
+                                         "REACTOME_CONSTITUTIVE_SIGNALING_BY_LIGAND_RESPONSIVE_EGFR_CANCER_VARIANTS",
+                                         "EACTOME_VEGFR2_MEDIATED_CELL_PROLIFERATION"  ,
+                                         "REACTOME_SIGNALING_BY_EGFR",
+                                         "REACTOME_SIGNALING_BY_ERBB2"),ordered = T)
 
-#diff23<-rbind(dat3,dat4)
+p1 <- ggplot(dt, aes(x = NES, y = Pathway,
+                     color = Group, fill = Group))
+p1
+p3 <- p1+ geom_density_ridges(scale = 1.6, alpha = 0.5,
+                              rel_min_height=0.01,
+                              quantiles = 0.5,
+                              quantile_lines = TRUE,
+                              vline_size=1,
+                              vline_linetype="dashed")
+p3
+p3+theme(panel.background = element_rect(fill = NA),
+                  plot.margin = margin(t=10,r=10,b=5,l=5,unit = "mm"),
+                  axis.ticks.y = element_blank(),
+                  axis.ticks.x = element_line(colour = "black",size = 1),
+                  axis.line.x = element_line(colour = "black",size = 1),
+                  axis.text.x = element_text(size = 12,face='bold'),
+                  axis.title.x = element_text(size = 12,face='bold'),
+                  panel.grid.major.y = element_line(colour = NA,size = 0.5),
+         panel.grid.major.x = element_blank())
 
-GOKEGG <- function(geneset=NULL, output, filename, trend) {
-  if(output == 'GO') {
-    ego <- enrichGO(gene          = bitr(geneset,
-                                         fromType = 'SYMBOL', toType = 'ENTREZID',
-                                         OrgDb = 'org.Hs.eg.db')$ENTREZID,
-                    # universe      = names(geneList),
-                    OrgDb         = org.Hs.eg.db,
-                    ont           = "ALL",
-                    pAdjustMethod = "BH",
-                    pvalueCutoff  = 0.5,
-                    qvalueCutoff  = 0.5,
-                    readable      = TRUE)
-    GO_ <- as.data.frame(ego)
-    write.table(GO_, paste0(filename, '_GO_', trend, '(GEO all DEGs).txt'), 
-                sep = '\t', row.names = F, quote = F)
-    return(GO_)}
-  if(output == 'KEGG') {
-    kk <- enrichKEGG(gene          = bitr(geneset,
-                                          fromType = 'SYMBOL', toType = 'ENTREZID',
-                                          OrgDb = 'org.Hs.eg.db')$ENTREZID,
-                     organism      = 'hsa',
-                     pAdjustMethod = "BH",
-                     pvalueCutoff  = 0.5,
-                     qvalueCutoff  = 0.5)
-    KEGG_ <- as.data.frame(setReadable(kk, OrgDb = org.Hs.eg.db, keyType="ENTREZID"))
-    write.table(KEGG_, paste0(filename, '_KEGG_', trend, '(GEO all DEGs).txt'), 
-                sep = '\t', row.names = F, quote = F)
-    return(KEGG_)}
-}
-
-DrawEnrich <- function(dat, type, top.number = 5, col="blue", trend){
-  if(type == 'BP') {tit <- 'Biological Process of '}
-  if(type == 'CC') {tit <- 'Cellular Component of '}
-  if(type == 'MF') {tit <- 'Molecular Function of '}
-  if(type == 'KEGG') {tit <- 'KEGG Pathway of '}
-  if(type == 'GO') {tit <- 'Gene Ontology Enrichment of '}
-  dat1 = dat[c(1:top.number),]
-  dat1$Description = capitalize(dat1$Description)
-  dat1 = dat1[order(dat1$p.adjust),,drop=F]
-  dat1$Description = factor(dat1$Description,levels=dat1$Description[length(dat1$Description):1])
-  dat1$PValue = -log10(dat1$p.adjust)
-  dat1$GeneRatio <- dat1$Count / as.numeric(gsub('^.*/', '', dat1$GeneRatio))
-  p = ggplot(dat1,aes(GeneRatio, Description)) +
-    geom_point(aes(size=Count,colour=PValue)) +
-    scale_colour_gradient(low=col,high="red") + 
-    labs(colour=expression(-log[10]("P Value")),size="Gene counts",  
-         x="Gene Ratio",y="",title=paste0(tit, trend, '-regulated Genes(GEO)')) +
-    theme_bw() + theme(axis.text.x = element_text(size = 14), 
-                       axis.text.y=element_text(size=14), 
-                       plot.title=element_text(size=20, hjust=1), 
-                       
-                       legend.text=element_text(size=12), legend.title=element_text(size=14),
-                       axis.title.x=element_text(size=18)) +
-    scale_x_continuous(limits = c(0,max(dat1$GeneRatio) * 1.2)) 
-  return(p)
-}
-GO <- GOKEGG(geneset=dat3$Gene, output='GO',filename='sqh2021','UP')
-
-GOKEGG <- function(geneset=NULL, output, filename, trend) {
-  if(output == 'GO') {
-    ego <- enrichGO(gene          = bitr(geneset,
-                                         fromType = 'SYMBOL', toType = 'ENTREZID',
-                                         OrgDb = 'org.Hs.eg.db')$ENTREZID,
-                    # universe      = names(geneList),
-                    OrgDb         = org.Hs.eg.db,
-                    ont           = "ALL",
-                    pAdjustMethod = "BH",
-                    pvalueCutoff  = 0.5,
-                    qvalueCutoff  = 0.5,
-                    readable      = TRUE)
-    GO_ <- as.data.frame(ego)
-    write.table(GO_, paste0(filename, '_GO_', trend, '(GEO all DEGs).txt'), 
-                sep = '\t', row.names = F, quote = F)
-    return(GO_)}
-  if(output == 'KEGG') {
-    kk <- enrichKEGG(gene          = bitr(geneset,
-                                          fromType = 'SYMBOL', toType = 'ENTREZID',
-                                          OrgDb = 'org.Hs.eg.db')$ENTREZID,
-                     organism      = 'hsa',
-                     pAdjustMethod = "BH",
-                     pvalueCutoff  = 0.5,
-                     qvalueCutoff  = 0.5)
-    KEGG_ <- as.data.frame(setReadable(kk, OrgDb = org.Hs.eg.db, keyType="ENTREZID"))
-    write.table(KEGG_, paste0(filename, '_KEGG_', trend, '(GEO all DEGs).txt'), 
-                sep = '\t', row.names = F, quote = F)
-    return(KEGG_)}
-}
-
-DrawEnrich <- function(dat, type, top.number = 5, col="blue", trend){
-  if(type == 'BP') {tit <- 'Biological Process of '}
-  if(type == 'CC') {tit <- 'Cellular Component of '}
-  if(type == 'MF') {tit <- 'Molecular Function of '}
-  if(type == 'KEGG') {tit <- 'KEGG Pathway of '}
-  if(type == 'GO') {tit <- 'Gene Ontology Enrichment of '}
-  dat1 = dat[c(1:top.number),]
-  dat1$Description = capitalize(dat1$Description)
-  dat1 = dat1[order(dat1$p.adjust),,drop=F]
-  dat1$Description = factor(dat1$Description,levels=dat1$Description[length(dat1$Description):1])
-  dat1$PValue = -log10(dat1$p.adjust)
-  dat1$GeneRatio <- dat1$Count / as.numeric(gsub('^.*/', '', dat1$GeneRatio))
-  p = ggplot(dat1,aes(GeneRatio, Description)) +
-    geom_point(aes(size=Count,colour=PValue)) +
-    scale_colour_gradient(low=col,high="red") + 
-    labs(colour=expression(-log[10]("P Value")),size="Gene counts",  
-         x="Gene Ratio",y="",title=paste0(tit, trend, '-regulated Genes(GEO)')) +
-    theme_bw() + theme(axis.text.x = element_text(size = 14), 
-                       axis.text.y=element_text(size=14), 
-                       plot.title=element_text(size=20, hjust=1), 
-                       
-                       legend.text=element_text(size=12), legend.title=element_text(size=14),
-                       axis.title.x=element_text(size=18)) +
-    scale_x_continuous(limits = c(0,max(dat1$GeneRatio) * 1.2)) 
-  return(p)
-}
-
-GO <- GOKEGG(geneset=dat4$Gene, output='GO',filename='sqh2021','DOWN')
 #Fig. 3b
 library(ggplot2)
 datA<-read.table("A-72-3000-90-PDD.csv",header = T,sep =",",stringsAsFactors = F)
@@ -1280,7 +1195,7 @@ library(corrplot)
 library(psych)
 library(xtable)
 
-dat12$geneID<-gsub('/', ', ', dat12$geneID)# Category,ID,term,Genes,adj_pval£»
+dat12$geneID<-gsub('/', ', ', dat12$geneID)# Category,ID,term,Genes,adj_pvalï¼›
 colnames(dat12)
 dat12<-dat12[,c(1:3,9,7)]
 colnames(dat12)<- c('Category','ID','term','Genes','adj_pval')
@@ -3023,7 +2938,7 @@ colplot(Cox_nomo, coloroptions = 3,
 #Supplementary Fig. 3a 
 library(maftools)
 laml.maf = read.csv("TCGA.LIHC.mutect.maf.csv",header=TRUE)
-oncoplot(maf = laml.maf , top = 30, fontSize = 12 ,showTumorSampleBarcodes = F£¬clinicalFeatures = 'cluster' )
+oncoplot(maf = laml.maf , top = 30, fontSize = 12 ,showTumorSampleBarcodes = Fï¼ŒclinicalFeatures = 'cluster' )
 laml.titv = titv(maf = laml, plot = FALSE, useSyn = TRUE)
 plotTiTv(res = laml.titv)
 #Supplementary Fig. 3b none
@@ -3172,7 +3087,7 @@ library(psych)
 library(xtable)
 library('GOplot')
 
-dat12$geneID<-gsub('/', ', ', dat12$geneID)# Category,ID,term,Genes,adj_pval£»
+dat12$geneID<-gsub('/', ', ', dat12$geneID)# Category,ID,term,Genes,adj_pvalï¼›
 colnames(dat12)
 dat12<-dat12[,c(1:3,9,7)]
 colnames(dat12)<- c('Category','ID','term','Genes','adj_pval')
